@@ -12,27 +12,75 @@ document.addEventListener('DOMContentLoaded', () => {
         { name: 'img5', img: 'https://img.freepik.com/free-photo/japan-background-digital-art_23-2151546189.jpg' }
     ];
 
-    cardArray.sort(() => 0.5 - Math.random());
+    const startImage = 'https://images.unsplash.com/photo-1607743882420-4412ee605bac?q=80&w=1935&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D';
 
     const grid = document.querySelector('.grid');
     const resultDisplay = document.querySelector('#result');
+    const movesDisplay = document.querySelector('#moves');
+    const timeDisplay = document.querySelector('#timer');
+    const restartBtn = document.querySelector('#restart');
+    
     let cardsChosen = [];
     let cardsChosenId = [];
     let cardsWon = [];
+    let moveCount = 0;
+    let timeElapsed = 0;
+    let timer;
 
-    const startImage = 'https://images.unsplash.com/photo-1607743882420-4412ee605bac?q=80&w=1935&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D';
+    function createBoard() {
+        grid.innerHTML = '';
+        cardArray.sort(() => 0.5 - Math.random()); // Shuffle the cards
+
+        for (let i = 0; i < cardArray.length; i++) {
+            const card = document.createElement('img');
+            card.setAttribute('src', startImage);
+            card.setAttribute('data-id', i);
+            card.addEventListener('click', flipCard);
+            grid.appendChild(card);
+        }
+
+        // Reset variables
+        cardsChosen = [];
+        cardsChosenId = [];
+        cardsWon = [];
+        moveCount = 0;
+        timeElapsed = 0;
+        movesDisplay.textContent = "0";
+        resultDisplay.textContent = "0";
+        timeDisplay.textContent = "0 sec";
+
+        // Start timer
+        clearInterval(timer);
+        timer = setInterval(() => {
+            timeElapsed++;
+            timeDisplay.textContent = `${timeElapsed} sec`;
+        }, 1000);
+    }
+
+    function flipCard() {
+        let cardId = this.getAttribute('data-id');
+        if (cardsChosenId.includes(cardId) || cardsWon.flat().includes(cardArray[cardId].name)) return;
+
+        cardsChosen.push(cardArray[cardId].name);
+        cardsChosenId.push(cardId);
+        this.setAttribute('src', cardArray[cardId].img);
+
+        if (cardsChosen.length === 2) {
+            moveCount++;
+            movesDisplay.textContent = moveCount;
+            setTimeout(checkForMatch, 500);
+        }
+    }
 
     function checkForMatch() {
         const cards = document.querySelectorAll('img');
         const [optionOneId, optionTwoId] = cardsChosenId;
 
         if (cardsChosen[0] === cardsChosen[1] && optionOneId !== optionTwoId) {
-            // Keep images flipped (do nothing)
             cards[optionOneId].removeEventListener('click', flipCard);
             cards[optionTwoId].removeEventListener('click', flipCard);
             cardsWon.push(cardsChosen);
         } else {
-            // Flip cards back if they don’t match
             setTimeout(() => {
                 cards[optionOneId].setAttribute('src', startImage);
                 cards[optionTwoId].setAttribute('src', startImage);
@@ -44,33 +92,12 @@ document.addEventListener('DOMContentLoaded', () => {
         resultDisplay.textContent = cardsWon.length;
 
         if (cardsWon.length === cardArray.length / 2) {
-            resultDisplay.textContent = '🎉 You won!';
+            clearInterval(timer);
+            alert(`🎉 You won! Time: ${timeElapsed} sec | Moves: ${moveCount}`);
         }
     }
 
-    function flipCard() {
-        let cardId = this.getAttribute('data-id');
-        if (cardsChosenId.includes(cardId) || cardsWon.flat().includes(cardArray[cardId].name)) return; // Prevent flipping matched cards again
+    restartBtn.addEventListener('click', createBoard); // Restart game when button is clicked
 
-        cardsChosen.push(cardArray[cardId].name);
-        cardsChosenId.push(cardId);
-        this.setAttribute('src', cardArray[cardId].img);
-
-        if (cardsChosen.length === 2) {
-            setTimeout(checkForMatch, 500);
-        }
-    }
-
-    function createBoard() {
-        grid.innerHTML = '';
-        for (let i = 0; i < cardArray.length; i++) {
-            const card = document.createElement('img');
-            card.setAttribute('src', startImage); // Default image
-            card.setAttribute('data-id', i);
-            card.addEventListener('click', flipCard);
-            grid.appendChild(card);
-        }
-    }
-
-    createBoard();
+    createBoard(); // Initialize the game
 });
